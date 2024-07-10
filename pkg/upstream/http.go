@@ -1,6 +1,7 @@
 package upstream
 
 import (
+	"os"
 	"context"
 	"net"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"github.com/mbland/hmacauth"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/middleware"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options"
+
+	httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 )
 
 const (
@@ -50,11 +53,13 @@ func newHTTPUpstreamProxy(upstream options.Upstream, u *url.URL, sigData *option
 
 	// Create a ReverseProxy
 	proxy := newReverseProxy(u, upstream, errorHandler)
+	proxy = httptrace.WrapHandler(proxy, os.Getenv("DD_SERVICE"), "http.request")
 
 	// Set up a WebSocket proxy if required
 	var wsProxy http.Handler
 	if upstream.ProxyWebSockets == nil || *upstream.ProxyWebSockets {
 		wsProxy = newWebSocketReverseProxy(u, upstream.InsecureSkipTLSVerify)
+		wsProxy = httptrace.WrapHandler(wsProxy, os.Getenv("DD_SERVICE"), "http.request")
 	}
 
 	var auth hmacauth.HmacAuth

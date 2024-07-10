@@ -10,9 +10,15 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/logger"
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/validation"
 	"github.com/spf13/pflag"
+
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 func main() {
+	tracer.Start(
+		tracer.WithAgentAddr(fmt.Sprintf("%s:%s", os.Getenv("DD_AGENT_HOST"), os.Getenv("DD_AGENT_PORT"))),
+		tracer.WithService(os.Getenv("DD_SERVICE")),
+	)
 	logger.SetFlags(logger.Lshortfile)
 
 	configFlagSet := pflag.NewFlagSet("oauth2-proxy", pflag.ContinueOnError)
